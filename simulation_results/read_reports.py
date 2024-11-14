@@ -115,3 +115,55 @@ def extract_dbct_report(file_path):
     cmf = np.array(cmf)
     return hash, mass, cmf
 
+#function to plot v versus v
+def plot_b_v(b, v, type):
+    shape = np.zeros(len(type), dtype=object)
+    color = np.zeros(len(type), dtype=object)
+    
+    for i in range(len(type)):
+        if type[i] == 'EFFECTIVELY MERGED':
+            shape[i] = 'D'
+            color[i] = 'blue'
+        
+        elif type[i] == 'SIMPLY MERGED':
+            shape[i] = 'D'
+            color[i] = 'red'
+        
+        elif type[i] == 'PARTIAL ACCRETION':
+            shape[i] = 'o'
+            color[i] = 'green'
+        
+        elif type[i] == 'PARTIAL EROSION':
+            shape[i] = '^'
+            color[i] = 'grey'
+    
+        elif type[i] == 'SUPER-CATASTROPHIC':
+            shape[i] = '^'
+            color[i] = 'magenta'
+        else:
+            shape[i] = '*'
+            color[i] = 'cyan'
+            
+    plt.figure(figsize=(6,5))
+
+    # Track the types already used in the legend
+    used_labels = set()
+
+    for i in range(len(type)):
+        label = type[i] if type[i] not in used_labels else None  # Only add label if it hasn't been used
+        if label:
+            used_labels.add(type[i])  # Add the label to the set
+
+        plt.scatter(
+        b[i], v[i], 
+        label=label,
+        marker=shape[i], 
+        color=color[i]
+        )
+
+    plt.yscale('log')
+    plt.xlabel('b/R_target')
+    plt.ylabel('v/v_esc')
+    plt.legend(loc='upper left')  # Show legend if needed
+
+    plt.show()
