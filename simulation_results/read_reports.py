@@ -124,6 +124,7 @@ def extract_dbct_report(file_path):
 
 #function to plot v versus v
 def plot_b_v(b, v, type):
+    plt.clf()
     shape = np.zeros(len(type), dtype=object)
     color = np.zeros(len(type), dtype=object)
     
@@ -180,7 +181,6 @@ def plot_b_v(b, v, type):
         marker=shape[i], 
         color=color[i]
         )
-
     plt.yscale('log')
     plt.xlabel('b/R_target')
     plt.ylabel('v/v_esc')
@@ -188,6 +188,8 @@ def plot_b_v(b, v, type):
 
     plt.show()
     
+    
+
     
 #Function to make CDF
 def make_cdf(data):
