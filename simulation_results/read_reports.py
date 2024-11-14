@@ -8,10 +8,12 @@ from astropy import units as u
 def extract_data_outfile(file_path):
     """
     Extracts collision time, types, and t versus number of bodies in simulation from the output file.
+    Returns two pandas dataframes:
+    1. t_type: with columns ['coll_times', 'coll_types']
+    2. t_n: with columns ['t', 'n_bodies']
     """
     coll_time = []
     coll_types = []
-    n_bodies = []                     
     n_bodies_list = []
     
     # Open and read the file
@@ -28,7 +30,6 @@ def extract_data_outfile(file_path):
                 type_value = line.split(":")[1].strip()
                 coll_types.append(type_value)
                 
- 
             if "N_tot=" in line and "t=" in line:
                 # Extract N_tot and time values
                 parts = line.split()
@@ -37,14 +38,20 @@ def extract_data_outfile(file_path):
                 # Append the (t, n_bodies) as a tuple to the list
                 n_bodies_list.append((t, n_bodies))
                 
+    # Convert lists to numpy arrays for structured data
     n_bodies = np.array(n_bodies_list, dtype=[('t', 'i4'), ('n_bodies', 'i4')])
-                
     
-    coll_time = np.array(coll_time)
-    coll_types = np.array(coll_types)
+    # Create pandas DataFrame for collision time and types
+    t_type = pd.DataFrame({
+        'coll_times': coll_time,
+        'coll_types': coll_types
+    })
     
+    # Create pandas DataFrame for n_bodies (t and n_bodies)
+    t_n = pd.DataFrame(n_bodies)
     
-    return coll_time, coll_types, n_bodies
+    return t_type, t_n
+
 
 
 #extract vi/vesc and b/b_crit
@@ -131,7 +138,7 @@ def plot_b_v(b, v, type):
         
         elif type[i] == 'PARTIAL ACCRETION':
             shape[i] = 'o'
-            color[i] = 'green'
+            color[i] = 'black'
         
         elif type[i] == 'PARTIAL EROSION':
             shape[i] = '^'
@@ -140,11 +147,24 @@ def plot_b_v(b, v, type):
         elif type[i] == 'SUPER-CATASTROPHIC':
             shape[i] = '^'
             color[i] = 'magenta'
+            
+        elif type[i] == 'GRAZE AND MERGE':
+            shape[i] = 'o'
+            color[i] = 'green'
+        
+        elif type[i] == 'ELASTIC BOUNCE':
+            shape[i] = '*'
+            color[i] = 'brown'
+            
+        elif type[i] == 'HIT AND RUN':
+            shape[i] = '^'
+            color[i] = 'orange'
+            
         else:
             shape[i] = '*'
             color[i] = 'cyan'
             
-    plt.figure(figsize=(6,5))
+    plt.figure(figsize=(10,6))
 
     # Track the types already used in the legend
     used_labels = set()
@@ -166,4 +186,24 @@ def plot_b_v(b, v, type):
     plt.ylabel('v/v_esc')
     plt.legend(loc='upper left')  # Show legend if needed
 
+    plt.show()
+    
+    
+#Function to make CDF
+def make_cdf(data):
+    data_sorted = np.sort(data)
+    cdf = np.arange(1, len(data_sorted) + 1) / len(data_sorted)
+    return data_sorted, cdf
+    
+
+def plot_v_cdf(v,color, label):
+    v_plot, cdf = make_cdf(v)
+    
+    plt.plot(np.log(v_plot), cdf, color=color, label=label)
+
+    plt.xlabel('log(vi_vesc)')
+    plt.ylabel('CDF')
+    plt.title('CDF of vi/vesc')
+    plt.legend()
+    plt.grid(True)
     plt.show()
