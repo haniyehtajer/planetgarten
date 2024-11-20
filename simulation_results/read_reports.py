@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 from astropy import units as u
+from scipy.stats import ks_2samp
 
 
 #This function reads .out files, and extracts collision times, collision types, and number of bodies versus time
@@ -209,3 +210,34 @@ def plot_v_cdf(v,color, label):
     plt.legend()
     plt.grid(True)
     plt.show()
+    
+    
+
+
+def perform_ks_test(data1, data2, alpha=0.05):
+    """
+    Perform a Kolmogorov-Smirnov (K-S) test on two datasets.
+
+    Parameters:
+        data1 (array-like): First dataset.
+        data2 (array-like): Second dataset.
+        alpha (float): Significance level for the test. Default is 0.05.
+
+    Returns:
+        dict: A dictionary containing the test statistic, p-value, 
+              and a conclusion about the null hypothesis.
+    """
+    # Perform the K-S test
+    statistic, p_value = ks_2samp(data1, data2)
+    
+    # Interpretation of the result
+    result = {
+        "statistic": statistic,
+        "p_value": p_value,
+        "conclusion": "Reject H0: The datasets are significantly different."
+                     if p_value < alpha else
+                     "Fail to reject H0: No significant difference in the datasets."
+    }
+    return result
+
+
