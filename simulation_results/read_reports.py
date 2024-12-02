@@ -241,3 +241,99 @@ def perform_ks_test(data1, data2, alpha=0.05):
     return result
 
 
+
+
+def extract_data_outfile_limited(file_path, limit):
+    """
+    Extracts data from the output file related to collisions and the number of bodies over time,
+    filtering the results to only include rows where 't' < limit.
+    
+    Parameters:
+        file_path (str): Path to the output file.
+        limit (float): The upper limit for the 't' values.
+    
+    Returns:
+        tuple: Two pandas DataFrames:
+            1. t_type: Columns ['coll_times', 'coll_types'] for collision times and types.
+            2. t_n: Columns ['t', 'n_bodies'] for time and number of bodies in the simulation,
+                    filtered by 't' < limit.
+    """
+    coll_time = []
+    coll_types = []
+    n_bodies_list = []
+
+    try:
+        # Open and read the file
+        with open(file_path, 'r') as file:
+            for line in file:
+                # Extract collision time
+                if "TIME OF COLLISION:" in line:
+                    try:
+                        time_value = float(line.split(":")[1].strip())
+                        coll_time.append(time_value)
+                    except ValueError:
+                        print(f"Error parsing collision time in line: {line.strip()}")
+
+                # Extract collision type
+                if "COLLISION TYPE:" in line:
+                    type_value = line.split(":")[1].strip()
+                    coll_types.append(type_value)
+
+                # Extract time and number of bodies
+                if "N_tot=" in line and "t=" in line:
+                    try:
+                        parts = line.split()
+                        n_bodies = int(parts[1])  # Extract the value after "N_tot="
+                        t = float(parts[3])       # Extract the time value
+                        if t < limit:             # Only include if t < limit
+                            n_bodies_list.append((t, n_bodies))
+                    except (IndexError, ValueError):
+                        print(f"Error parsing N_tot or time in line: {line.strip()}")
+
+        # Create pandas DataFrames
+        t_type = pd.DataFrame({
+            'coll_times': coll_time,
+            'coll_types': coll_types
+        })
+
+        t_n = pd.DataFrame(n_bodies_list, columns=['t', 'n_bodies'])
+
+        return t_type, t_n
+
+    except FileNotFoundError:
+        print(f"File not found: {file_path}")
+        return None, None
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return None, None
+
+
+def remove_outliers_iqr(data):
+    """
+    Remove outliers from a dataset using the IQR method.
+
+    Parameters:
+        data (array-like): Input dataset (1D or 2D).
+
+    Returns:
+        np.ndarray: Dataset with outliers removed.
+    """
+    data = np.array(data)
+    if len(data.shape) == 1:  # For 1D data
+        q1 = np.percentile(data, 25)
+        q3 = np.percentile(data, 75)
+        iqr = q3 - q1
+        lower_bound = q1 - 1.5 * iqr
+        upper_bound = q3 + 1.5 * iqr
+        return data[(data >= lower_bound) & (data <= upper_bound)]
+    else:  # For 2D data
+        clean_data = []
+        for col in range(data.shape[1]):
+            q1 = np.percentile(data[:, col], 25)
+            q3 = np.percentile(data[:, col], 75)
+            iqr = q3 - q1
+            lower_bound = q1 - 1.5 * iqr
+            upper_bound = q3 + 1.5 * iqr
+            clean_col = data[(data[:, col] >= lower_bound) & (data[:, col] <= upper_bound)]
+            clean_data.append(clean_col)
+        return np.vstack(clean_data)
