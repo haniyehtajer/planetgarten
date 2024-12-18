@@ -53,7 +53,82 @@ def extract_data_outfile(file_path):
     
     return t_type, t_n
 
+def extract_data_outfile_full(file_path):
+    """
+    Extracts collision time, types, and t versus number of bodies in simulation from the output file.
+    Returns one panda's dataframe with everything!
+    """
+    df = pd.DataFrame(columns=['time', 'hash_t', 'Mt', 'hash_p', 'Mp',
+                                'Mp/Mt', 'Mlr/Mt', 'Mlr/Mtot', 'b/Rt', 'Vimp/Vesc', 'Q/Q*', 'type'])
+    index = 0
 
+    with open(file_path, 'r') as file:
+            for line in file:
+                # Check if the line contains the desired phrase
+                if "TIME OF COLLISION:" in line:
+                    # Extract the value after "TIME OF COLLISION:"
+                    df.loc[index, 'time'] = float(line.split(":")[1].strip())
+                
+                if "Target hash, mass =" in line:
+                    hash_mass_t = line.split("=")[1].strip()
+                    df.loc[index, 'hash_t'], df.loc[index, 'Mt'] = hash_mass_t.split()
+                    
+                if "Projectile hash, mass =" in line:
+                    hash_mass_p = line.split("=")[1].strip()
+                    df.loc[index, 'hash_p'], df.loc[index, 'Mp'] = hash_mass_p.split()
+                    
+                if "Mp/Mt:" in line:
+                    df.loc[index, 'Mp/Mt'] = float(line.split(":")[1].strip())
+                
+                if "Mlr/Mt:" in line:
+                    df.loc[index, 'Mlr/Mt'] = float(line.split(":")[1].strip())
+                
+                if "Mlr/Mtot:" in line:
+                    df.loc[index, 'Mlr/Mtot'] = float(line.split(":")[1].strip())
+                
+                if "b/Rtarg:" in line:
+                    df.loc[index, 'b/Rt'] = float(line.split(":")[1].strip())
+                
+                if "Vimp/Vesc:" in line:
+                    df.loc[index, 'Vimp/Vesc'] = float(line.split(":")[1].strip())
+                
+                if "Q/ Qstar:" in line:
+                    df.loc[index, 'Q/Q*'] = float(line.split(":")[1].strip())
+                
+                if "COLLISION TYPE:" in line:
+                    df.loc[index, 'type'] = str(line.split(":")[1].strip())
+                    index += 1
+    return df
+
+#function to read number of bodies in simulation at every time point
+def read_num_bodies(filepath):
+    time = []
+    df = []
+    with open(filepath, 'r') as file:
+        for line in file:
+            if "N_tot=" in line and "t=" in line:
+                        # Extract N_tot and time values
+                        parts = line.split()
+                        n_bodies = int(parts[1])  # Extract the value after "N_tot="
+                        t = int(float(parts[3]))  # Extract the time value and convert to integer
+                        # Append the (t, n_bodies) as a tuple to the list
+                        df.append((t, n_bodies))
+
+    n_bodies = np.array(df, dtype=[('t', 'i4'), ('n_bodies', 'i4')])
+    t_n = pd.DataFrame(n_bodies)
+
+    return t_n
+
+
+def read_dbct_output(filename):
+    df = pd.DataFrame(columns=['hash', 'mass', 'cmf'])
+
+    data = np.loadtxt(filename)
+    df['hash'] = data[:,0]
+    df['mass'] = data[:,1]
+    df['cmf'] = data[:,2]
+
+    return df
 
 #extract vi/vesc and b/b_crit
 
